@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Whitelist</title>
+		<link href="css/bootstrap.min.css" rel="stylesheet" />
+	</head>
+	<body>
+		<div class="container" style="width: 650px">
+			<div class="row">
+				<div class="col-lg-12 text-center">
+					<h1>Whistelist for the DLH-Certificate</h1>
+					<hr />
+				</div>
+			</div>
+			<div class="row">
+				<div id="content" class="col-12 text-center">
+					<h4 id="whitelisted">
+						<span id="counter"></span> spots left
+					</h4>
+					<form role="form" name="form">
+						<button
+							type="submit"
+							class="btn btn-primary btn-lg"
+							id="btn-whitelist"
+						>
+							Whitelist me
+						</button>
+					</form>
+				</div>
+			</div>
+		</div>
+
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+		<script src="js/bootstrap.min.js"></script>
+
+		<script src="js/web3.min.js"></script>
+		<script>
+			// Initialize Web3
+			if (typeof web3 !== "undefined") {
+				web3 = new Web3(web3.currentProvider);
+			} else {
+				web3 = new Web3(
+					new Web3.providers.HttpProvider("http://127.0.0.1:7545")
+				);
+			}
+
+			// Switch the network to Goerli
+			// if (web3.eth.defaultChain != "goerli") {
+			// 	web3.eth.defaultChain = "goerli";
+			// }
+
+			// Set Contract Abi
+			const contractAbi = [
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "_addr",
+							type: "address",
+						},
+					],
+					name: "addWallet",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "addWhitelist",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "_addr",
+							type: "address",
+						},
+					],
+					name: "removeWallet",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "removeWhitelist",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "_newOwner",
+							type: "address",
+						},
+					],
+					name: "setOwner",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint8",
+							name: "_whitelistSpots",
+							type: "uint8",
+						},
+					],
+					stateMutability: "nonpayable",
+					type: "constructor",
+				},
+				{
+					inputs: [],
+					name: "checkWhitelist",
+					outputs: [
+						{
+							internalType: "bool",
+							name: "",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "getOwner",
+					outputs: [
+						{
+							internalType: "address",
+							name: "",
+							type: "address",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "owner",
+					outputs: [
+						{
+							internalType: "address",
+							name: "",
+							type: "address",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "spotsLeft",
+					outputs: [
+						{
+							internalType: "uint8",
+							name: "",
+							type: "uint8",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "",
+							type: "address",
+						},
+					],
+					name: "whitelistedAddress",
+					outputs: [
+						{
+							internalType: "bool",
+							name: "",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+			];
+			// Set Contract Address
+			const contractAddress =
+				"0xae87BBd107b36A6aEb887539856ca1534f1749A1";
+
+			// Set Account
+			web3.eth.defaultAccount = web3.eth.accounts[0];
+
+			// Set the Contract
+			const contract = web3.eth.contract(contractAbi).at(contractAddress);
+
+			// Display the remaining whitelist
+			const updateCounter = async () => {
+				await contract.spotsLeft.call((err, res) => {
+					if (err) throw err;
+					let left = res["c"][0];
+					$("#counter").html(left);
+				});
+			};
+			updateCounter();
+
+			// Check if sender is whitelisted already
+			// and change the button accordingly
+			const checkWhitelist = async () => {
+				await contract.checkWhitelist.call((err, res) => {
+					if (err) throw err;
+					if (res) {
+						// If sender is whitelisted, disable button and change text
+						$("#btn-whitelist").prop("disabled", true);
+						$("#btn-whitelist").html("You are whitelisted");
+					} else {
+						// If sender is not whitelisted, enable button and change text
+						$("#btn-whitelist").prop("disabled", false);
+						$("#btn-whitelist").html("Whitelist me");
+					}
+				});
+			};
+			checkWhitelist();
+
+			// Add the user to the whitelist
+			const addWhitelist = async () => {
+				try {
+					await contract.addWhitelist().send((err, res) => {
+						if (err) throw err;
+						console.log(res);
+					});
+				} catch (error) {
+					console.log(error);
+				}
+			};
+
+			// Add EventListener to the button
+			$("#btn-whitelist").on("click", async (e) => {
+				e.preventDefault();
+				addWhitelist();
+				updateCounter();
+				checkWhitelist();
+			});
+		</script>
+	</body>
+</html>
